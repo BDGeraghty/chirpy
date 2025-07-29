@@ -1,12 +1,9 @@
 package main
 
-
-
 import (
-   //"fmt"
-   "log"
-   "net/http"
-   "sync/atomic"
+	"log"
+	"net/http"
+	"sync/atomic"
 )
 
 type apiConfig struct {
@@ -16,20 +13,21 @@ type apiConfig struct {
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
-	cfg := apiConfig{
+
+	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 	}
 
-
 	mux := http.NewServeMux()
-	mux.Handle("/app/", cfg.middlewareMetricsInc(
-			http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
+	fsHandler := apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
+	mux.Handle("/app/", fsHandler)
+
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
-	//mux.Handle("/app/", cfg.middlewareMetricsInc(handler))
-	mux.HandleFunc("GET /admin/metrics", cfg.handlerMetrics)
-	mux.HandleFunc("POST /admin/reset", cfg.handlerReset)
-	mux.HandleFunc("POST /api/validate_chirp", cfg.handlerValidateChirp)
- 
+	mux.HandleFunc("POST /api/validate_chirp", handlerChirpsValidate)
+
+	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
+
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
@@ -38,4 +36,3 @@ func main() {
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
 	log.Fatal(srv.ListenAndServe())
 }
-

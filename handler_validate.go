@@ -1,38 +1,33 @@
 package main
 
 import (
-	"net/http"
 	"encoding/json"
-
+	"net/http"
 )
 
-type Chirp struct {
-	Body  string `json:"body"`
-}
+func handlerChirpsValidate(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Body string `json:"body"`
+	}
+	type returnVals struct {
+		Valid bool `json:"valid"`
+	}
 
-func (cfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
-
-	var chirp Chirp
-	if err := json.NewDecoder(r.Body).Decode(&chirp); err != nil {
-		w.Header().Add("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "Invalid chirp format"}`))
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
 		return
 	}
-	if len(chirp.Body) == 0 || len(chirp.Body) > 140 {
-		w.Header().Add("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "Chirp must be between 1 and 140 characters"}`))
+
+	const maxChirpLength = 140
+	if len(params.Body) > maxChirpLength {
+		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
 		return
 	}
-	// Here you would add any additional validation logic for the chirp
-	// For example, checking for prohibited words or patterns		
-   w.Header().Set("Content-Type", "application/json; charset=utf-8")
-   w.WriteHeader(http.StatusOK)
-   json.NewEncoder(w).Encode(struct {
-	   Valid bool `json:"valid"`
-   }{
-	   Valid: true,
-   })
 
+	respondWithJSON(w, http.StatusOK, returnVals{
+		Valid: true,
+	})
 }
