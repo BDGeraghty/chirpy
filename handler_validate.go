@@ -12,7 +12,6 @@ type Chirp struct {
 
 func (cfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 
-
 	var chirp Chirp
 	if err := json.NewDecoder(r.Body).Decode(&chirp); err != nil {
 		w.Header().Add("Content-Type", "application/json; charset=utf-8")
