@@ -6,16 +6,13 @@ import (
 	"strings"
 )
 
-const badWordMask string = "****"
-
 func handlerChirpsValidate(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
 	}
 	type returnVals struct {
-		CleanedBody string `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
-	
 
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
@@ -35,30 +32,26 @@ func handlerChirpsValidate(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "Chirp is empty", nil)
 		return
 	}
-	params.Body = containsBadWord(params.Body)
+	badWords := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
+	cleaned := cleanedBody(params.Body, badWords)
 	respondWithJSON(w, http.StatusOK, returnVals{
-		CleanedBody: params.Body,
+		CleanedBody: cleaned,
 	})
 }
 
+func cleanedBody(chirp string, badWords map[string]struct{}) string {
 
-func containsBadWord(chirp string) string {
-	badWords := []string{"kerfuffle", "sharbert", "fornax"}
-	var cleanChirp strings.Builder
-	badWordFound := false
-	words := strings.Fields(strings.ToLower(chirp))
-	for _, word := range words {
-		for _, bad := range badWords {
-			if word == bad {
-				badWordFound = true
-				break
-			} 
-		}
-		if badWordFound {
-			cleanChirp.WriteString(badWordMask + " ")
-		} else {
-			cleanChirp.WriteString(word + " ")
+	words := strings.Split(chirp, " ")
+	for i, word := range words {
+		loweredWord := strings.ToLower(word)
+		if _, ok := badWords[loweredWord]; ok {
+			words[i] = "****"
 		}
 	}
-	return cleanChirp.String()
+	cleanedChirp := strings.Join(words, " ")
+	return cleanedChirp
 }
