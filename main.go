@@ -19,6 +19,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	secretKey      string
 }
 
 func main() {
@@ -39,12 +40,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening database: %s", err)
 	}
+	
+	// Ping the database to verify connection
+	if err := dbConn.Ping(); err != nil {
+		log.Fatalf("Error pinging database: %s", err)
+	}
+	
 	dbQueries := database.New(dbConn)
+	jwtSecret := os.Getenv("SECRET_KEY")
+	if jwtSecret == "" {
+		log.Fatal("SECRET_KEY must be set")
+	}
 
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       platform,
+		secretKey:      jwtSecret,
 	}
 
 	mux := http.NewServeMux()
