@@ -19,6 +19,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 			CreatedAt time.Time `json:"created_at"`
 			UpdatedAt time.Time `json:"updated_at"`
 			Token     string    `json:"token"`
+			RefreshToken string `json:"refresh_token"`
 	}	
 
 	decoder := json.NewDecoder(r.Body)
@@ -48,12 +49,17 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't generate JWT", err)
 		return
 	}
-
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't generate refresh token", err)
+		return
+	}
 	respondWithJSON(w, http.StatusOK, response{
 		ID:        user.ID.String(),
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Token:     token,
+		RefreshToken: refreshToken,
 	})
 }
